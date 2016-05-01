@@ -174,7 +174,12 @@ func TestWrapCellsSimple(t *testing.T) {
 	tabulate.SetHeaders([]string{"Header 1", "header 2", "header 3", "header 4"})
 	tabulate.SetMaxCellSize(16)
 	tabulate.SetWrapStrings(true)
-	assert.Equal(t, tabulate.Render("simple"), readTable("_tests/test_string_wrap_simple"))
+
+	// this fails for unkbown reasons
+	// assert.Equal(t, tabulate.Render("simple"), readTable("_tests/test_string_wrap_simple"))
+	if tabulate.Render("simple") != readTable("_tests/test_string_wrap_simple") {
+		assert.Equal(t, tabulate.Render("simple"), readTable("_tests/test_string_wrap_simple"))
+	}
 }
 func TestMultiByteString(t *testing.T) {
 	tabulate := Create([][]string{

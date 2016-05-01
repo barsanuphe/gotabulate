@@ -1,9 +1,12 @@
 package gotabulate
 
-import "fmt"
-import "bytes"
-import "github.com/mattn/go-runewidth"
-import "math"
+import (
+	"bytes"
+	"fmt"
+	"github.com/mattn/go-runewidth"
+	"github.com/nsf/termbox-go"
+	"math"
+)
 
 // Basic Structure of TableFormat
 type TableFormat struct {
@@ -75,12 +78,13 @@ type Tabulate struct {
 	HideLines   []string
 	MaxSize     int
 	WrapStrings bool
+	AutoSize    bool
 }
 
 // Represents normalized tabulate Row
 type TabulateRow struct {
-	Elements  []string
-	Continuos bool
+	Elements   []string
+	Continuous bool
 }
 
 type writeBuffer struct {
@@ -208,11 +212,6 @@ func (t *Tabulate) Render(format ...interface{}) string {
 		t.TableFormat = TableFormats[format[0].(string)]
 	}
 
-	// If Wrap Strings is set to True,then break up the string to multiple cells
-	if t.WrapStrings {
-		t.Data = t.wrapCellData()
-	}
-
 	// Check if Data is present
 	if len(t.Data) < 1 {
 		panic("No Data specified")
@@ -227,8 +226,24 @@ func (t *Tabulate) Render(format ...interface{}) string {
 		t.Headers = padded_header
 	}
 
-	// Get Column widths for all columns
-	cols := t.getWidths(t.Headers, t.Data)
+	var cols []int
+	if t.AutoSize {
+		// get max size for each column
+		cols = t.getWidths(t.Headers, t.Data)
+		// if autosize, calculate new column sizes and wrap data with the result
+		cols = t.autoSize(cols)
+		// If Autosize is set to True,then break up the string to multiple cells
+		t.Data = t.wrapCellData(cols)
+	} else {
+		// If WrapStrings is set to True,then break up the string to multiple cells
+		if t.WrapStrings {
+			t.Data = t.wrapCellData([]int{})
+		}
+		// get max size for each column
+		cols = t.getWidths(t.Headers, t.Data)
+	}
+
+
 
 	padded_widths := make([]int, len(cols))
 	for i, _ := range padded_widths {
@@ -254,7 +269,7 @@ func (t *Tabulate) Render(format ...interface{}) string {
 	for index, element := range t.Data {
 		lines = append(lines, t.buildRow(t.padRow(element.Elements, t.TableFormat.Padding), padded_widths, cols, t.TableFormat.DataRow))
 		if index < len(t.Data)-1 {
-			if element.Continuos != true {
+			if element.Continuous != true {
 				lines = append(lines, t.buildLine(padded_widths, cols, t.TableFormat.LineBetweenRows))
 			}
 		}
@@ -292,8 +307,38 @@ func (t *Tabulate) getWidths(headers []string, data []*TabulateRow) []int {
 			}
 		}
 	}
-
 	return widths
+}
+
+// autoSize columns relative to current terminal size
+func (t *Tabulate) autoSize(cols []int) []int {
+	// get total size of columns
+	totalWidth := 0
+	for i := range cols {
+		totalWidth += cols[i]
+	}
+	// total width and a small margin
+	totalWidth += MIN_PADDING * (2 + len(cols))
+
+	// get terminal size
+	if err := termbox.Init(); err != nil {
+		panic(err)
+	}
+	fullWidth, _ := termbox.Size()
+	termbox.Close()
+
+	delta := fullWidth - totalWidth
+	// occupy all space
+	if delta > 0 {
+		// last columns is maxed out
+		cols[len(cols)-1] += delta
+	} else {
+		// last column only is reduced
+		if cols[len(cols)-1] > -delta {
+			cols[len(cols)-1] += delta
+		}
+	}
+	return cols
 }
 
 // Set Headers of the table
@@ -340,8 +385,14 @@ func (t *Tabulate) SetHideLines(hide []string) {
 	t.HideLines = hide
 }
 
+// SetWrapStrings toggles fixed length wrapping for all cells.
 func (t *Tabulate) SetWrapStrings(wrap bool) {
 	t.WrapStrings = wrap
+}
+
+// SetAutoSize resizes columns to occupy all terminal width, wrapping automatically.
+func (t *Tabulate) SetAutoSize(autosize bool) {
+	t.AutoSize = autosize
 }
 
 // Sets the maximum size of cell
@@ -352,7 +403,7 @@ func (t *Tabulate) SetMaxCellSize(max int) {
 }
 
 // If string size is larger than t.MaxSize, then split it to multiple cells (downwards)
-func (t *Tabulate) wrapCellData() []*TabulateRow {
+func (t *Tabulate) wrapCellData(cols []int) []*TabulateRow {
 	var arr []*TabulateRow
 	next := t.Data[0]
 	for index := 0; index <= len(t.Data); index++ {
@@ -360,14 +411,18 @@ func (t *Tabulate) wrapCellData() []*TabulateRow {
 		new_elements := make([]string, len(elements))
 
 		for i, e := range elements {
-			if runewidth.StringWidth(e) > t.MaxSize {
-				elements[i] = runewidth.Truncate(e, t.MaxSize, "")
+			maxColWidth := t.MaxSize
+			if t.AutoSize {
+				maxColWidth = cols[i]
+			}
+			if runewidth.StringWidth(e) > maxColWidth {
+				elements[i] = runewidth.Truncate(e, maxColWidth, "")
 				new_elements[i] = e[len(elements[i]):]
-				next.Continuos = true
+				next.Continuous = true
 			}
 		}
 
-		if next.Continuos {
+		if next.Continuous {
 			arr = append(arr, next)
 			next = &TabulateRow{Elements: new_elements}
 			index--
@@ -385,7 +440,7 @@ func (t *Tabulate) wrapCellData() []*TabulateRow {
 // Create a new Tabulate Object
 // Accepts 2D String Array, 2D Int Array, 2D Int64 Array,
 // 2D Bool Array, 2D Float64 Array, 2D interface{} Array,
-// Map map[strig]string, Map map[string]interface{},
+// Map map[string]string, Map map[string]interface{},
 func Create(data interface{}) *Tabulate {
 	t := &Tabulate{FloatFormat: 'f', MaxSize: 30}
 
