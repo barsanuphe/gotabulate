@@ -62,6 +62,15 @@ var TableFormats = map[string]TableFormat{
 		DataRow:         Row{"|", "|", "|"},
 		Padding:         1,
 	},
+	"border": TableFormat{
+		LineTop:         Line{"┏", "━", "┳", "┓"},
+		LineBelowHeader: Line{"┡", "━", "╇", "┩"},
+		LineBottom:      Line{"└", "─", "┴", "┘"},
+		LineBetweenRows: Line{"├", "─", "┼", "┤"},
+		HeaderRow:       Row{"┃", "┃", "┃"},
+		DataRow:         Row{"│", "│", "│"},
+		Padding:         1,
+	},
 }
 
 // Minimum padding that will be applied
