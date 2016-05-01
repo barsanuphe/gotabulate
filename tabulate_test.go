@@ -1,8 +1,10 @@
 package gotabulate
 
-import "testing"
-import "io/ioutil"
-import "github.com/stretchr/testify/assert"
+import (
+	"github.com/stretchr/testify/assert"
+	"io/ioutil"
+	"testing"
+)
 
 var HEADERS = []string{"Header 1", "Header 2", "Header 3", "Header 4", "Header 5"}
 var INT_ARRAY = []int{1, 2, 3, 1000, 200}
@@ -100,7 +102,6 @@ func TestSimpleMapMixed(t *testing.T) {
 }
 
 // Test Grid
-
 func TestGridFloats(t *testing.T) {
 	tabulate := Create([][]float64{FLOAT_ARRAY, FLOAT_ARRAY, FLOAT_ARRAY[:len(FLOAT_ARRAY)-1]})
 	tabulate.SetHeaders(HEADERS)
@@ -192,6 +193,15 @@ func TestMultiByteString(t *testing.T) {
 	tabulate.SetWrapStrings(true)
 	assert.Equal(t, tabulate.Render("grid"), readTable("_tests/test_multibyte_string"))
 }
+
+// Test Border
+func TestBorderString(t *testing.T) {
+	tabulate := Create([][]string{STRING_ARRAY, STRING_ARRAY, EMPTY_ARRAY})
+	tabulate.SetHeaders(HEADERS)
+	tabulate.SetEmptyString("None")
+	assert.Equal(t, tabulate.Render("border"), readTable("_tests/border_strings"))
+}
+
 func readTable(path string) string {
 	buf, err := ioutil.ReadFile(path)
 	if err != nil {
