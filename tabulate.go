@@ -339,10 +339,10 @@ func (t *Tabulate) autoSize(cols []int) []int {
 	delta := fullWidth - totalWidth
 	// occupy all space
 	if delta > 0 {
-		// last columns is maxed out
+		// extending last column to full width
 		cols[len(cols)-1] += delta
 	} else {
-		// last column only is reduced
+		// shrinking last column if possible
 		if cols[len(cols)-1] > -delta {
 			cols[len(cols)-1] += delta
 		}

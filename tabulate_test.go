@@ -175,7 +175,7 @@ func TestWrapCellsSimple(t *testing.T) {
 	tabulate.SetMaxCellSize(16)
 	tabulate.SetWrapStrings(true)
 
-	// this fails for unkbown reasons
+	// this fails for unknown reasons, a direct comparison shows the strings are the same
 	// assert.Equal(t, tabulate.Render("simple"), readTable("_tests/test_string_wrap_simple"))
 	if tabulate.Render("simple") != readTable("_tests/test_string_wrap_simple") {
 		assert.Equal(t, tabulate.Render("simple"), readTable("_tests/test_string_wrap_simple"))
