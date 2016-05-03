@@ -1,9 +1,10 @@
 package gotabulate
 
 import (
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var HEADERS = []string{"Header 1", "Header 2", "Header 3", "Header 4", "Header 5"}

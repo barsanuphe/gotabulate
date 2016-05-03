@@ -3,9 +3,10 @@ package gotabulate
 import (
 	"bytes"
 	"fmt"
+	"math"
+
 	"github.com/mattn/go-runewidth"
 	"github.com/nsf/termbox-go"
-	"math"
 )
 
 // Basic Structure of TableFormat
@@ -240,7 +241,7 @@ func (t *Tabulate) Render(format ...interface{}) string {
 		// get max size for each column
 		cols = t.getWidths(t.Headers, t.Data)
 		// if autosize, calculate new column sizes and wrap data with the result
-		cols = t.autoSize(cols)
+		cols = t.autoSize(t.Headers, cols)
 		// If Autosize is set to True,then break up the string to multiple cells
 		t.Data = t.wrapCellData(cols)
 	} else {
@@ -251,8 +252,6 @@ func (t *Tabulate) Render(format ...interface{}) string {
 		// get max size for each column
 		cols = t.getWidths(t.Headers, t.Data)
 	}
-
-
 
 	padded_widths := make([]int, len(cols))
 	for i, _ := range padded_widths {
@@ -320,7 +319,7 @@ func (t *Tabulate) getWidths(headers []string, data []*TabulateRow) []int {
 }
 
 // autoSize columns relative to current terminal size
-func (t *Tabulate) autoSize(cols []int) []int {
+func (t *Tabulate) autoSize(headers []string, cols []int) []int {
 	// get total size of columns
 	totalWidth := 0
 	for i := range cols {
@@ -336,15 +335,19 @@ func (t *Tabulate) autoSize(cols []int) []int {
 	fullWidth, _ := termbox.Size()
 	termbox.Close()
 
-	delta := fullWidth - totalWidth
-	// occupy all space
-	if delta > 0 {
-		// extending last column to full width
-		cols[len(cols)-1] += delta
-	} else {
-		// shrinking last column if possible
-		if cols[len(cols)-1] > -delta {
-			cols[len(cols)-1] += delta
+	// shrink or expand columns while keeping proportions
+	ratio := float32(fullWidth-len(cols)*(MIN_PADDING+t.TableFormat.Padding)) / float32(totalWidth)
+	unshrinkableColumnsWidth := 0
+	for i := range cols {
+		cols[i] = int(float32(cols[i]) * ratio)
+		// ensure minimum size:
+		if cols[i] < runewidth.StringWidth(headers[i]) {
+			// get amount of width that could not be removed from this column
+			unshrinkableColumnsWidth += runewidth.StringWidth(headers[i]) - cols[i] + MIN_PADDING + t.TableFormat.Padding
+			// calculate new ratio taking this into account
+			ratio = float32(fullWidth-len(cols)*(MIN_PADDING+t.TableFormat.Padding)-unshrinkableColumnsWidth) / float32(totalWidth)
+			// set min column width
+			cols[i] = runewidth.StringWidth(headers[i])
 		}
 	}
 	return cols
@@ -401,6 +404,8 @@ func (t *Tabulate) SetWrapStrings(wrap bool) {
 
 // SetAutoSize resizes columns to occupy all terminal width, wrapping automatically.
 func (t *Tabulate) SetAutoSize(autosize bool) {
+	// shrink min padding for small columns
+	MIN_PADDING = 2
 	t.AutoSize = autosize
 }
 
