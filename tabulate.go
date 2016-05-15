@@ -325,8 +325,8 @@ func (t *Tabulate) autoSize(headers []string, cols []int) []int {
 	for i := range cols {
 		totalWidth += cols[i]
 	}
-	// total width and a small margin
-	totalWidth += MIN_PADDING * (2 + len(cols))
+	// adding padding
+	totalWidth += (len(cols)) * (1 + t.TableFormat.Padding*MIN_PADDING)
 
 	// get terminal size
 	if err := termbox.Init(); err != nil {
@@ -334,20 +334,40 @@ func (t *Tabulate) autoSize(headers []string, cols []int) []int {
 	}
 	fullWidth, _ := termbox.Size()
 	termbox.Close()
+	// removing size of characters drawing the columns
+	fullWidth -= (len(cols)) * (1 + t.TableFormat.Padding*MIN_PADDING)
 
 	// shrink or expand columns while keeping proportions
-	ratio := float32(fullWidth-len(cols)*(MIN_PADDING+t.TableFormat.Padding)) / float32(totalWidth)
+	ratio := float64(fullWidth) / float64(totalWidth)
+	averageSize := float64(totalWidth) / float64(len(cols))
 	unshrinkableColumnsWidth := 0
-	for i := range cols {
-		cols[i] = int(float32(cols[i]) * ratio)
-		// ensure minimum size:
-		if cols[i] < runewidth.StringWidth(headers[i]) {
-			// get amount of width that could not be removed from this column
-			unshrinkableColumnsWidth += runewidth.StringWidth(headers[i]) - cols[i] + MIN_PADDING + t.TableFormat.Padding
-			// calculate new ratio taking this into account
-			ratio = float32(fullWidth-len(cols)*(MIN_PADDING+t.TableFormat.Padding)-unshrinkableColumnsWidth) / float32(totalWidth)
-			// set min column width
-			cols[i] = runewidth.StringWidth(headers[i])
+
+	if totalWidth <= fullWidth {
+		// expand all columns
+		for i := range cols {
+			cols[i] = int(math.Ceil(float64(cols[i]) * ratio))
+		}
+	} else {
+		// a little more complicated
+		for i := range cols {
+			// do not shrink the smaller columns
+			if float64(cols[i]) < averageSize {
+				// get amount of width that could not be removed from this column
+				unshrinkableColumnsWidth += cols[i] + MIN_PADDING*t.TableFormat.Padding
+				// calculate new ratio taking this into account
+				ratio = float64(fullWidth-unshrinkableColumnsWidth) / float64(totalWidth-unshrinkableColumnsWidth)
+			} else {
+				cols[i] = int(math.Ceil(float64(cols[i]-MIN_PADDING*t.TableFormat.Padding) * ratio))
+			}
+			// ensure minimum size:
+			if cols[i] < runewidth.StringWidth(headers[i]) {
+				// get amount of width that could not be removed from this column
+				unshrinkableColumnsWidth += runewidth.StringWidth(headers[i]) - cols[i] + MIN_PADDING*t.TableFormat.Padding
+				// calculate new ratio taking this into account
+				ratio = float64(fullWidth-unshrinkableColumnsWidth) / float64(totalWidth-unshrinkableColumnsWidth)
+				// set min column width
+				cols[i] = runewidth.StringWidth(headers[i])
+			}
 		}
 	}
 	return cols
