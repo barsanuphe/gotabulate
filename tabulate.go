@@ -325,17 +325,14 @@ func (t *Tabulate) autoSize(headers []string, cols []int) []int {
 	for i := range cols {
 		totalWidth += cols[i]
 	}
-	// adding padding
-	totalWidth += (len(cols)) * (1 + t.TableFormat.Padding*MIN_PADDING)
-
 	// get terminal size
 	if err := termbox.Init(); err != nil {
 		panic(err)
 	}
 	fullWidth, _ := termbox.Size()
 	termbox.Close()
-	// removing size of characters drawing the columns
-	fullWidth -= (len(cols)) * (1 + t.TableFormat.Padding*MIN_PADDING)
+	// removing size of characters drawing the columns and padding
+	fullWidth -= 2 + (len(cols)) * (1+ t.TableFormat.Padding*MIN_PADDING)
 
 	// shrink or expand columns while keeping proportions
 	ratio := float64(fullWidth) / float64(totalWidth)
@@ -357,16 +354,17 @@ func (t *Tabulate) autoSize(headers []string, cols []int) []int {
 				// calculate new ratio taking this into account
 				ratio = float64(fullWidth-unshrinkableColumnsWidth) / float64(totalWidth-unshrinkableColumnsWidth)
 			} else {
-				cols[i] = int(math.Ceil(float64(cols[i]-MIN_PADDING*t.TableFormat.Padding) * ratio))
-			}
-			// ensure minimum size:
-			if cols[i] < runewidth.StringWidth(headers[i]) {
-				// get amount of width that could not be removed from this column
-				unshrinkableColumnsWidth += runewidth.StringWidth(headers[i]) - cols[i] + MIN_PADDING*t.TableFormat.Padding
-				// calculate new ratio taking this into account
-				ratio = float64(fullWidth-unshrinkableColumnsWidth) / float64(totalWidth-unshrinkableColumnsWidth)
-				// set min column width
-				cols[i] = runewidth.StringWidth(headers[i])
+				cols[i] = int(math.Ceil(float64(cols[i]) * ratio))
+
+				// ensure minimum size:
+				if cols[i] < runewidth.StringWidth(headers[i]) {
+					// get amount of width that could not be removed from this column
+					unshrinkableColumnsWidth += runewidth.StringWidth(headers[i]) - cols[i] + MIN_PADDING * t.TableFormat.Padding
+					// calculate new ratio taking this into account
+					ratio = float64(fullWidth - unshrinkableColumnsWidth) / float64(totalWidth - unshrinkableColumnsWidth)
+					// set min column width
+					cols[i] = runewidth.StringWidth(headers[i])
+				}
 			}
 		}
 	}
