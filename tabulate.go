@@ -453,7 +453,9 @@ func (t *Tabulate) wrapCellData(cols []int) []*TabulateRow {
 				// if last letter is inside a word, back up until the start of the last word
 				if elements[i][ len(elements[i])-1 :] != " " {
 					lastWordStart := strings.LastIndex(elements[i], " ")
-					elements[i] = elements[i][:lastWordStart+1]
+					if lastWordStart != -1 {
+						elements[i] = elements[i][:lastWordStart + 1]
+					}
 				}
 				new_elements[i] = e[len(elements[i]):]
 				next.Continuous = true

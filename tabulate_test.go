@@ -158,6 +158,7 @@ func TestHideLineBelowHeader(t *testing.T) {
 	tabulate.SetHideLines([]string{"belowheader"})
 	assert.Equal(t, tabulate.Render("grid"), readTable("_tests/test_hide_lines"))
 }
+
 func TestWrapCells(t *testing.T) {
 	tabulate := Create([][]string{[]string{"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus laoreet vestibulum pretium. Nulla et ornare elit. Cum sociis natoque penatibus et magnis",
 		"Vivamus laoreet vestibulum pretium. Nulla et ornare elit. Cum sociis natoque penatibus et magnis", "zzLorem ipsum", " test", "test"}, []string{"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus laoreet vestibulum pretium. Nulla et ornare elit. Cum sociis natoque penatibus et magnis",
@@ -168,6 +169,7 @@ func TestWrapCells(t *testing.T) {
 	tabulate.SetWrapStrings(true)
 	assert.Equal(t, tabulate.Render("grid"), readTable("_tests/test_string_wrap_grid"))
 }
+
 func TestWrapCellsSimple(t *testing.T) {
 	tabulate := Create([][]string{[]string{"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus laoreet vestibulum pretium. Nulla et ornare elit. Cum sociis natoque penatibus et magnis",
 		"Vivamus laoreet vestibulum pretium. Nulla et ornare elit. Cum sociis natoque penatibus et magnis", "zzLorem ipsum", " test", "test"}, []string{"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus laoreet vestibulum pretium. Nulla et ornare elit. Cum sociis natoque penatibus et magnis",
@@ -177,12 +179,9 @@ func TestWrapCellsSimple(t *testing.T) {
 	tabulate.SetMaxCellSize(16)
 	tabulate.SetWrapStrings(true)
 
-	// this fails for unknown reasons, a direct comparison shows the strings are the same
-	// assert.Equal(t, tabulate.Render("simple"), readTable("_tests/test_string_wrap_simple"))
-	if tabulate.Render("simple") != readTable("_tests/test_string_wrap_simple") {
-		assert.Equal(t, tabulate.Render("simple"), readTable("_tests/test_string_wrap_simple"))
-	}
+	assert.EqualValues(t, readTable("_tests/test_string_wrap_simple"), tabulate.Render("simple"))
 }
+
 func TestMultiByteString(t *testing.T) {
 	tabulate := Create([][]string{
 		{"朝", "おはようございます"},
