@@ -337,7 +337,7 @@ func (t *Tabulate) autoSize(headers []string, cols []int) []int {
 
 	// shrink or expand columns while keeping proportions
 	ratio := float64(fullWidth) / float64(totalWidth)
-	averageSize := float64(totalWidth) / float64(len(cols))
+	averageSize := float64(fullWidth) / float64(len(cols))
 	unshrinkableColumnsWidth := 0
 
 	if totalWidth <= fullWidth {
