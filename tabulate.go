@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/mattn/go-runewidth"
 	"github.com/nsf/termbox-go"
-	"strings"
 )
 
 // Basic Structure of TableFormat
@@ -333,7 +333,7 @@ func (t *Tabulate) autoSize(headers []string, cols []int) []int {
 	fullWidth, _ := termbox.Size()
 	termbox.Close()
 	// removing size of characters drawing the columns and padding
-	fullWidth -= 2 + (len(cols)) * (1+ t.TableFormat.Padding*MIN_PADDING)
+	fullWidth -= 2 + (len(cols))*(1+t.TableFormat.Padding*MIN_PADDING)
 
 	// shrink or expand columns while keeping proportions
 	ratio := float64(fullWidth) / float64(totalWidth)
@@ -343,7 +343,7 @@ func (t *Tabulate) autoSize(headers []string, cols []int) []int {
 	if totalWidth <= fullWidth {
 		// expand all columns
 		for i := range cols {
-			cols[i] = int(math.Ceil(float64(cols[i]) * ratio))
+			cols[i] = int(math.Floor(float64(cols[i]) * ratio))
 		}
 	} else {
 		// a little more complicated
@@ -355,14 +355,14 @@ func (t *Tabulate) autoSize(headers []string, cols []int) []int {
 				// calculate new ratio taking this into account
 				ratio = float64(fullWidth-unshrinkableColumnsWidth) / float64(totalWidth-unshrinkableColumnsWidth)
 			} else {
-				cols[i] = int(math.Ceil(float64(cols[i]) * ratio))
+				cols[i] = int(math.Floor(float64(cols[i]) * ratio))
 
 				// ensure minimum size:
 				if cols[i] < runewidth.StringWidth(headers[i]) {
 					// get amount of width that could not be removed from this column
-					unshrinkableColumnsWidth += runewidth.StringWidth(headers[i]) - cols[i] + MIN_PADDING * t.TableFormat.Padding
+					unshrinkableColumnsWidth += runewidth.StringWidth(headers[i]) - cols[i] + MIN_PADDING*t.TableFormat.Padding
 					// calculate new ratio taking this into account
-					ratio = float64(fullWidth - unshrinkableColumnsWidth) / float64(totalWidth - unshrinkableColumnsWidth)
+					ratio = float64(fullWidth-unshrinkableColumnsWidth) / float64(totalWidth-unshrinkableColumnsWidth)
 					// set min column width
 					cols[i] = runewidth.StringWidth(headers[i])
 				}
@@ -451,10 +451,10 @@ func (t *Tabulate) wrapCellData(cols []int) []*TabulateRow {
 			if runewidth.StringWidth(e) > maxColWidth {
 				elements[i] = runewidth.Truncate(e, maxColWidth, "")
 				// if last letter is inside a word, back up until the start of the last word
-				if elements[i][ len(elements[i])-1 :] != " " {
+				if elements[i][len(elements[i])-1:] != " " {
 					lastWordStart := strings.LastIndex(elements[i], " ")
 					if lastWordStart != -1 {
-						elements[i] = elements[i][:lastWordStart + 1]
+						elements[i] = elements[i][:lastWordStart+1]
 					}
 				}
 				new_elements[i] = e[len(elements[i]):]
