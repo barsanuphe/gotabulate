@@ -449,15 +449,28 @@ func (t *Tabulate) wrapCellData(cols []int) []*TabulateRow {
 				maxColWidth = cols[i]
 			}
 			if runewidth.StringWidth(e) > maxColWidth {
-				elements[i] = runewidth.Truncate(e, maxColWidth, "")
+				// if newline found before maxColWidth, truncate there instead
+				skipNewline := false
+				newlineIndex := strings.Index(e, "\n")
+				if newlineIndex != -1 && newlineIndex < maxColWidth {
+					elements[i] = runewidth.Truncate(e, newlineIndex, "")
+					skipNewline = true
+				} else {
+					elements[i] = runewidth.Truncate(e, maxColWidth, "")
+				}
 				// if last letter is inside a word, back up until the start of the last word
-				if elements[i][len(elements[i])-1:] != " " {
+				if !skipNewline && elements[i][len(elements[i])-1:] != " " {
 					lastWordStart := strings.LastIndex(elements[i], " ")
 					if lastWordStart != -1 {
 						elements[i] = elements[i][:lastWordStart+1]
 					}
 				}
-				new_elements[i] = e[len(elements[i]):]
+				// if the line was truncated by \n, skip the \n character for next line
+				if skipNewline {
+					new_elements[i] = e[len(elements[i])+1:]
+				} else {
+					new_elements[i] = e[len(elements[i]):]
+				}
 				next.Continuous = true
 			}
 		}
