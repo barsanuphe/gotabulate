@@ -339,13 +339,14 @@ func (t *Tabulate) autoSize(headers []string, cols []int) []int {
 	ratio := float64(fullWidth) / float64(totalWidth)
 	averageSize := float64(fullWidth) / float64(len(cols))
 	unshrinkableColumnsWidth := 0
-
 	if totalWidth <= fullWidth {
 		// expand all columns
 		for i := range cols {
 			cols[i] = int(math.Floor(float64(cols[i]) * ratio))
 		}
 	} else {
+		// keep track of columns that can be shrunk
+		shrinkable := make([]bool, len(cols))
 		// a little more complicated
 		for i := range cols {
 			// do not shrink the smaller columns
@@ -355,20 +356,29 @@ func (t *Tabulate) autoSize(headers []string, cols []int) []int {
 				// calculate new ratio taking this into account
 				ratio = float64(fullWidth-unshrinkableColumnsWidth) / float64(totalWidth-unshrinkableColumnsWidth)
 			} else {
-				cols[i] = int(math.Floor(float64(cols[i]) * ratio))
-
+				newSize := int(math.Floor(float64(cols[i]) * ratio))
 				// ensure minimum size:
-				if cols[i] < runewidth.StringWidth(headers[i]) {
+				if newSize < runewidth.StringWidth(headers[i]) {
 					// get amount of width that could not be removed from this column
 					unshrinkableColumnsWidth += runewidth.StringWidth(headers[i]) - cols[i] + MIN_PADDING*t.TableFormat.Padding
 					// calculate new ratio taking this into account
 					ratio = float64(fullWidth-unshrinkableColumnsWidth) / float64(totalWidth-unshrinkableColumnsWidth)
 					// set min column width
 					cols[i] = runewidth.StringWidth(headers[i])
+				} else {
+					shrinkable[i] = true
 				}
 			}
 		}
+		// reshrink with latest ratio
+		for i := range cols {
+			if shrinkable[i] {
+				cols[i] = int(math.Floor(float64(cols[i]) * ratio))
+			}
+		}
 	}
+
+	fmt.Println(cols)
 	return cols
 }
 
