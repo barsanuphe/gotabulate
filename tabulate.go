@@ -377,8 +377,6 @@ func (t *Tabulate) autoSize(headers []string, cols []int) []int {
 			}
 		}
 	}
-
-	fmt.Println(cols)
 	return cols
 }
 
